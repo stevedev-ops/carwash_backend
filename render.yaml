@@ -26,3 +26,4 @@ databases:
     plan: free
     databaseName: shell_carwash
     user: carwash_admin
+

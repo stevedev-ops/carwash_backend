@@ -18,3 +18,4 @@ echo "==> Seeding initial business data..."
 python manage.py seed_data || echo "Seed data already present or skipped"
 
 echo "==> Build completed successfully!"
+

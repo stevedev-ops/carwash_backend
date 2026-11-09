@@ -453,7 +453,7 @@
       if (typeof window !== 'undefined' && window.__ENV__ && window.__ENV__.API_URL) {
         return window.__ENV__.API_URL.replace(/\/+$/, '');
       }
-      return '';
+      return 'https://carwash-backend-4kk7.onrender.com';
     };
 
     const getApiBase = () => {
@@ -976,7 +976,7 @@
                   </label>
                   <input
                     type="text"
-                    placeholder="https://carwash-backend.onrender.com"
+                    placeholder="https://carwash-backend-4kk7.onrender.com"
                     value={serverInput}
                     onChange={(e) => setServerInput(e.target.value)}
                     className="w-full px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-mono"

@@ -87,3 +87,4 @@ Backend API will be live at: `http://127.0.0.1:8000/api/`
 - **Attendance**: `GET, POST /api/attendance/`
 - **Daily Closings**: `GET, POST /api/daily-closings/`
 - **Exports**: `GET /api/reports/export/excel/`, `GET /api/reports/export/pdf/`, `GET /api/reports/export/csv/{entity}/`
+

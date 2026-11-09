@@ -146,7 +146,9 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
 
 # CSRF Trusted Origins
 CSRF_TRUSTED_ORIGINS = [
+    'https://carwashfrontend-eorp-kappa.vercel.app',
     'https://*.vercel.app',
+    'https://carwash-backend-4kk7.onrender.com',
     'https://*.onrender.com',
     'http://localhost:5173',
     'http://localhost:3000',
