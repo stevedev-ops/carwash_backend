@@ -1,12 +1,15 @@
 import os
 import tempfile
 from pathlib import Path
-from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load environment variables from .env file if available
-load_dotenv(BASE_DIR / '.env')
+try:
+    from dotenv import load_dotenv
+    load_dotenv(BASE_DIR / '.env')
+except ImportError:
+    pass
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure--0o%pxh%-)!2aktfzzgvz*(7iy*$0e5!_4sjg2)ghn8)!s*s_o')
 

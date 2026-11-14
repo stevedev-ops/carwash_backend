@@ -4,6 +4,7 @@ from rest_framework import status, permissions, viewsets
 from rest_framework.decorators import action
 from django.contrib.auth import authenticate
 from django.utils import timezone
+from django.db.models import ProtectedError
 from core.authentication import generate_jwt_token
 from core.permissions import IsAdminUser
 from .models import User, WorkerProfile, Attendance
@@ -68,6 +69,27 @@ class CurrentUserView(APIView):
             'worker_profile_id': worker_profile_id,
         })
 
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all().order_by('-date_joined')
+    serializer_class = UserSerializer
+    permission_classes = [IsAdminUser]
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance == request.user:
+            return Response({'error': 'You cannot delete your own logged-in admin account.'}, status=status.HTTP_400_BAD_REQUEST)
+        user_name = instance.get_full_name() or instance.username
+        try:
+            instance.delete()
+            return Response({'status': 'deleted', 'message': f'User "{user_name}" permanently deleted.'}, status=status.HTTP_200_OK)
+        except ProtectedError:
+            instance.is_active = False
+            instance.save()
+            return Response({
+                'status': 'deactivated',
+                'message': f'User "{user_name}" has recorded historical system data. Account has been deactivated and blocked from login to preserve audit trails.'
+            }, status=status.HTTP_200_OK)
+
 class WorkerProfileViewSet(viewsets.ModelViewSet):
     queryset = WorkerProfile.objects.all().select_related('user').order_by('id')
     serializer_class = WorkerProfileSerializer
@@ -79,6 +101,27 @@ class WorkerProfileViewSet(viewsets.ModelViewSet):
         if active_only == 'true':
             qs = qs.filter(is_active=True)
         return qs
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        user = instance.user
+        worker_name = user.get_full_name() or user.username if user else f"Worker #{instance.id}"
+        try:
+            user_to_delete = user
+            instance.delete()
+            if user_to_delete:
+                user_to_delete.delete()
+            return Response({'status': 'deleted', 'message': f'Worker "{worker_name}" permanently deleted.'}, status=status.HTTP_200_OK)
+        except ProtectedError:
+            instance.is_active = False
+            instance.save()
+            if user:
+                user.is_active = False
+                user.save()
+            return Response({
+                'status': 'deactivated',
+                'message': f'Worker "{worker_name}" has historical wash or payout records. Profile was deactivated and removed from active roster to preserve audit integrity.'
+            }, status=status.HTTP_200_OK)
 
 class AttendanceViewSet(viewsets.ModelViewSet):
     queryset = Attendance.objects.all().select_related('worker__user', 'marked_by')

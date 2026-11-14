@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
-from accounts.views import LoginView, CurrentUserView, WorkerProfileViewSet, AttendanceViewSet
+from accounts.views import LoginView, CurrentUserView, WorkerProfileViewSet, AttendanceViewSet, UserViewSet
 from services.views import ServiceViewSet, WorkerCommissionRateViewSet
 from carwash.views import VehicleViewSet, CarWashViewSet
 from carwash.receipt_views import CarWashCustomerReceiptView
@@ -20,6 +20,7 @@ from reports.views import (
 from core.views import SinglePageAppView, ServiceWorkerView, ManifestView
 
 router = DefaultRouter()
+router.register(r'users', UserViewSet, basename='users')
 router.register(r'workers', WorkerProfileViewSet, basename='workers')
 router.register(r'attendance', AttendanceViewSet, basename='attendance')
 router.register(r'services', ServiceViewSet, basename='services')

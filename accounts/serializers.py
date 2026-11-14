@@ -61,6 +61,32 @@ class WorkerProfileSerializer(serializers.ModelSerializer):
         )
         return profile
 
+    def update(self, instance, validated_data):
+        user = instance.user
+        first_name = validated_data.pop('first_name', None)
+        last_name = validated_data.pop('last_name', None)
+        phone_number = validated_data.pop('phone_number', None)
+        password = validated_data.pop('password', None)
+        is_active = validated_data.get('is_active', None)
+
+        if user:
+            if first_name is not None:
+                user.first_name = first_name
+            if last_name is not None:
+                user.last_name = last_name
+            if phone_number is not None:
+                user.phone_number = phone_number
+            if is_active is not None:
+                user.is_active = is_active
+            if password:
+                user.set_password(password)
+            user.save()
+
+        if phone_number and 'mpesa_number' not in validated_data and not instance.mpesa_number:
+            validated_data['mpesa_number'] = phone_number
+
+        return super().update(instance, validated_data)
+
 class AttendanceSerializer(serializers.ModelSerializer):
     worker_name = serializers.ReadOnlyField(source='worker.user.get_full_name')
     marked_by_name = serializers.ReadOnlyField(source='marked_by.get_full_name')
