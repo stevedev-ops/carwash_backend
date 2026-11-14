@@ -1016,6 +1016,7 @@
     // ==========================================
     function AdminPortal({ activeTab, setActiveTab, showToast, currentUser, onLogout }) {
       const [pendingCount, setPendingCount] = useState(0);
+      const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
       const loadPendingCount = () => {
         authFetch('/washes/pending/')
@@ -1045,9 +1046,9 @@
       ];
 
       return (
-        <div className="flex-1 flex flex-col md:flex-row">
-          {/* Left Sidebar */}
-          <aside className="w-full md:w-64 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0 shadow-xs">
+        <div className="flex-1 flex flex-col md:flex-row min-h-screen">
+          {/* Desktop Left Sidebar (persistent on md and larger) */}
+          <aside className="hidden md:flex w-64 bg-white border-r border-slate-200 flex-col justify-between shrink-0 shadow-xs min-h-screen sticky top-0 h-screen overflow-y-auto">
             <div className="p-4">
               <div className="flex items-center space-x-3 mb-6 px-2">
                 <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-700 via-blue-600 to-cyan-500 flex items-center justify-center text-white font-extrabold text-xl shadow-md">
@@ -1110,14 +1111,119 @@
             </div>
           </aside>
 
+          {/* Mobile Slide-Out Sidebar Drawer (for phone screens) */}
+          {mobileMenuOpen && (
+            <div className="fixed inset-0 z-50 md:hidden flex">
+              {/* Dark backdrop */}
+              <div
+                className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+                onClick={() => setMobileMenuOpen(false)}
+              />
+
+              {/* Sidebar Drawer */}
+              <aside className="relative w-72 max-w-[85vw] bg-white h-full flex flex-col justify-between shadow-2xl z-10 animate-in slide-in-from-left duration-200">
+                <div className="p-4 overflow-y-auto">
+                  <div className="flex items-center justify-between mb-5 px-1">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-700 via-blue-600 to-cyan-500 flex items-center justify-center text-white font-extrabold text-xl shadow-md">
+                        SC
+                      </div>
+                      <div>
+                        <h2 className="font-extrabold text-slate-900 leading-tight">Shell Clean</h2>
+                        <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Admin Control</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center text-sm"
+                      title="Close Menu"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <nav className="space-y-1">
+                    {navItems.map(item => (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setActiveTab(item.id);
+                          setMobileMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition ${
+                          activeTab === item.id 
+                            ? 'bg-blue-50 text-blue-700 shadow-xs' 
+                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2.5">
+                          <span className="text-base">{item.icon}</span>
+                          <span>{item.label}</span>
+                        </div>
+                        {item.count > 0 && (
+                          <span className="bg-amber-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full animate-pulse">
+                            {item.count}
+                          </span>
+                        )}
+                        {item.badge && (
+                          <span className="bg-blue-100 text-blue-700 text-[10px] font-extrabold px-1.5 py-0.5 rounded">
+                            {item.badge}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </nav>
+                </div>
+
+                {/* Mobile Drawer User Footer */}
+                <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+                  <div className="flex items-center space-x-2.5 truncate">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-black text-xs">
+                      {currentUser?.first_name?.[0] || currentUser?.username?.[0] || 'A'}
+                    </div>
+                    <div className="truncate">
+                      <p className="text-xs font-bold text-slate-800 truncate">{currentUser?.first_name || currentUser?.username}</p>
+                      <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">{currentUser?.role}</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={onLogout}
+                    title="Sign Out"
+                    className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-white transition text-xs font-bold"
+                  >
+                    Sign Out ⎋
+                  </button>
+                </div>
+              </aside>
+            </div>
+          )}
+
           {/* Main Workspace */}
           <main className="flex-1 flex flex-col overflow-y-auto min-w-0 bg-slate-50">
             {/* Top Workspace Bar with Network/Sync Status */}
-            <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-3 flex items-center justify-between shrink-0 shadow-2xs">
-              <div className="flex items-center space-x-2">
-                <span className="font-extrabold text-slate-800 text-sm tracking-tight capitalize">
-                  {navItems.find(n => n.id === activeTab)?.label || 'Overview'}
-                </span>
+            <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-3 flex items-center justify-between shrink-0 shadow-2xs sticky top-0 z-30">
+              <div className="flex items-center space-x-3">
+                {/* Mobile Hamburger Menu Button (opens sidebar on phone) */}
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(true)}
+                  className="md:hidden relative w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center text-lg shadow-2xs transition"
+                  title="Open Navigation Menu"
+                >
+                  <span>☰</span>
+                  {pendingCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-500 rounded-full ring-2 ring-white animate-pulse" />
+                  )}
+                </button>
+                <div>
+                  <span className="font-extrabold text-slate-800 text-sm tracking-tight capitalize block leading-tight">
+                    {navItems.find(n => n.id === activeTab)?.label || 'Overview'}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-semibold md:hidden leading-none">
+                    Shell Clean Management
+                  </span>
+                </div>
+              </div>
               </div>
               <div className="flex items-center space-x-3">
                 <NetworkStatusBar showToast={showToast} />
@@ -2225,6 +2331,7 @@
 
       const [servicesList, setServicesList] = useState([]);
       const [workersList, setWorkersList] = useState([]);
+      const [selectedAttendantIds, setSelectedAttendantIds] = useState([]);
       const [selectedServices, setSelectedServices] = useState({});
       const [submitting, setSubmitting] = useState(false);
       const [lookupResult, setLookupResult] = useState(null);
@@ -2236,8 +2343,52 @@
 
         authFetch('/workers/?active_only=true')
           .then(r => r.json())
-          .then(d => setWorkersList(Array.isArray(d) ? d : d.results || []));
+          .then(d => {
+            const list = Array.isArray(d) ? d : d.results || [];
+            setWorkersList(list);
+            if (list.length > 0) {
+              setSelectedAttendantIds([list[0].id]);
+            }
+          });
       }, []);
+
+      // Toggle who did the work across the entire vehicle wash
+      const toggleGlobalAttendant = (workerId) => {
+        const wid = Number(workerId);
+        setSelectedAttendantIds(prev => {
+          const next = prev.includes(wid) ? prev.filter(id => id !== wid) : [...prev, wid];
+          // Also synchronize all currently selected services to match the updated worker team
+          setSelectedServices(curServices => {
+            const updated = {};
+            for (const [srvId, srvData] of Object.entries(curServices)) {
+              updated[srvId] = {
+                ...srvData,
+                workerIds: next.length > 0 ? next : (prev.includes(wid) ? [wid] : next)
+              };
+            }
+            return updated;
+          });
+          return next;
+        });
+      };
+
+      // Select all active workers
+      const handleSelectAllAttendants = () => {
+        const allIds = workersList.map(w => w.id);
+        setSelectedAttendantIds(allIds);
+        setSelectedServices(curServices => {
+          const updated = {};
+          for (const [srvId, srvData] of Object.entries(curServices)) {
+            updated[srvId] = { ...srvData, workerIds: allIds };
+          }
+          return updated;
+        });
+      };
+
+      // Clear all attendants
+      const handleClearAttendants = () => {
+        setSelectedAttendantIds([]);
+      };
 
       // Auto-lookup vehicle when plate number changes
       useEffect(() => {
@@ -2271,10 +2422,12 @@
           if (next[srv.id]) {
             delete next[srv.id];
           } else {
-            const defWorker = workersList[0]?.id ? [workersList[0].id] : [];
+            const defaultTeam = selectedAttendantIds.length > 0
+              ? [...selectedAttendantIds]
+              : (workersList[0]?.id ? [workersList[0].id] : []);
             next[srv.id] = {
               price: srv.default_price,
-              workerIds: defWorker,
+              workerIds: defaultTeam,
               default_comm_type: srv.default_commission_type,
               default_comm_value: srv.default_commission_value,
               name: srv.name
@@ -2335,14 +2488,24 @@
           return;
         }
 
-        const items = Object.entries(selectedServices).map(([srvId, details]) => ({
-          service_id: Number(srvId),
-          price_charged: Number(details.price),
-          worker_ids: details.workerIds
-        }));
+        const items = Object.entries(selectedServices).map(([srvId, details]) => {
+          const itemWorkers = (details.workerIds && details.workerIds.length > 0)
+            ? details.workerIds
+            : selectedAttendantIds;
+          return {
+            service_id: Number(srvId),
+            price_charged: Number(details.price),
+            worker_ids: itemWorkers
+          };
+        });
 
         if (items.length === 0) {
           showToast('Please select at least one service performed.', 'error');
+          return;
+        }
+
+        if (items.some(it => !it.worker_ids || it.worker_ids.length === 0)) {
+          showToast('Please select who did this work (at least one car wash attendant).', 'error');
           return;
         }
 
@@ -2507,15 +2670,113 @@
 
             <hr className="border-slate-100" />
 
-            {/* Step 2: Services & Multi-Worker Allocation */}
+            {/* Step 2: Who Did This Work? (Car Wash Workers / Attendants) */}
+            <div className="bg-blue-50/70 p-5 rounded-3xl border-2 border-blue-200 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-blue-200">
+                <div className="flex items-center space-x-2.5">
+                  <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">2</span>
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 leading-tight">Who Did This Work? (Assigned Car Wash Attendants) *</h3>
+                    <p className="text-xs text-slate-600">Select the worker(s) who washed this vehicle. Commissions are automatically credited to them.</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleSelectAllAttendants}
+                    className="text-[11px] font-bold text-blue-700 hover:text-blue-900 px-2.5 py-1 bg-white rounded-xl border border-blue-300 shadow-2xs transition"
+                  >
+                    Select All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleClearAttendants}
+                    className="text-[11px] font-bold text-slate-600 hover:text-slate-800 px-2.5 py-1 bg-white rounded-xl border border-slate-300 shadow-2xs transition"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+
+              {/* Attendants Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
+                {workersList.map(w => {
+                  const isSelected = selectedAttendantIds.includes(w.id);
+                  const wName = `${w.user.first_name || ''} ${w.user.last_name || ''}`.trim() || w.user.username;
+                  const initials = (w.user.first_name?.[0] || w.user.username?.[0] || 'W').toUpperCase();
+                  return (
+                    <button
+                      key={w.id}
+                      type="button"
+                      onClick={() => toggleGlobalAttendant(w.id)}
+                      className={`p-3 rounded-2xl border text-left transition flex items-center justify-between shadow-2xs ${
+                        isSelected
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                          : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2.5 truncate">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${
+                          isSelected ? 'bg-white text-blue-700 shadow-xs' : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {initials}
+                        </div>
+                        <div className="truncate">
+                          <p className="font-extrabold text-xs truncate leading-tight">{wName}</p>
+                          <p className={`text-[10px] truncate ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
+                            {w.phone_number || `Worker ID #${w.id}`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="shrink-0 ml-2">
+                        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
+                          isSelected ? 'bg-white text-blue-700' : 'border border-slate-300 text-slate-400'
+                        }`}>
+                          {isSelected ? '✓' : '+'}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Attribution Status Banner */}
+              <div className="pt-1">
+                {selectedAttendantIds.length > 0 ? (
+                  <div className="text-xs font-bold text-blue-900 bg-white p-3 rounded-2xl border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-1 shadow-2xs">
+                    <span className="flex items-center space-x-1.5">
+                      <span>👥</span>
+                      <span>
+                        {selectedAttendantIds.length} Attendant{selectedAttendantIds.length > 1 ? 's' : ''} Assigned:
+                        <span className="font-extrabold ml-1">
+                          {workersList.filter(w => selectedAttendantIds.includes(w.id)).map(w => w.user.first_name || w.user.username).join(', ')}
+                        </span>
+                      </span>
+                    </span>
+                    <span className="text-blue-700 font-extrabold bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100">
+                      {selectedAttendantIds.length === 1 ? 'Earns 100% of commission' : `Commission split ${Math.round(100 / selectedAttendantIds.length)}% each`}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="text-xs font-bold text-amber-900 bg-amber-100/70 p-3 rounded-2xl border border-amber-300 flex items-center space-x-2">
+                    <span className="text-base">⚠️</span>
+                    <span>Please tap one or more workers above to assign them to this car wash.</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <hr className="border-slate-100" />
+
+            {/* Step 3: Services & Multi-Worker Allocation */}
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
-                  <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs">2</span>
-                  <span>Select Services & Assign Workers</span>
+                  <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs">3</span>
+                  <span>Select Services Performed</span>
                 </h3>
                 <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-                  Different workers can be assigned per service
+                  Assigned workers automatically apply to all services
                 </span>
               </div>
 
@@ -2624,11 +2885,11 @@
 
             <hr className="border-slate-100" />
 
-            {/* Step 3: Payment & Real-Time Splits */}
+            {/* Step 4: Payment & Real-Time Splits */}
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                 <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
-                  <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs">3</span>
+                  <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">4</span>
                   <span>Payment Collection Option</span>
                 </h3>
 
@@ -5234,11 +5495,12 @@
       const [jobs, setJobs] = useState([]);
       const [payouts, setPayouts] = useState([]);
       const [loading, setLoading] = useState(true);
+      const [workerSidebarOpen, setWorkerSidebarOpen] = useState(false);
 
       const [logModalOpen, setLogModalOpen] = useState(false);
       const [servicesList, setServicesList] = useState([]);
       const [allWorkers, setAllWorkers] = useState([]);
-      const [selectedCoWorkers, setSelectedCoWorkers] = useState([]);
+      const [selectedWorkerIds, setSelectedWorkerIds] = useState([]);
       const [logPlate, setLogPlate] = useState('');
       const [logVehicleType, setLogVehicleType] = useState('SEDAN');
       const [logServiceId, setLogServiceId] = useState('');
@@ -5247,9 +5509,10 @@
       const [logRef, setLogRef] = useState('');
       const [submittingJob, setSubmittingJob] = useState(false);
 
-      const toggleCoWorker = (workerId) => {
-        setSelectedCoWorkers(prev =>
-          prev.includes(workerId) ? prev.filter(id => id !== workerId) : [...prev, workerId]
+      const toggleWorkerSelection = (workerId) => {
+        const wid = Number(workerId);
+        setSelectedWorkerIds(prev =>
+          prev.includes(wid) ? prev.filter(id => id !== wid) : [...prev, wid]
         );
       };
 
@@ -5271,6 +5534,8 @@
           if (srvs.length > 0 && !logServiceId) setLogServiceId(srvs[0].id);
           const wrks = Array.isArray(wData) ? wData : wData.results || [];
           setAllWorkers(wrks);
+          const myId = Number(sData?.worker_id || selectedWorkerId || wrks[0]?.id || 1);
+          setSelectedWorkerIds(prev => (prev.length === 0 ? [myId] : prev));
           setLoading(false);
         }).catch(() => setLoading(false));
       };
@@ -5287,9 +5552,13 @@
         const chosenSrv = servicesList.find(s => s.id === Number(logServiceId));
         if (!chosenSrv) return;
 
+        if (selectedWorkerIds.length === 0) {
+          showToast('Please select who did this work (at least one worker)', 'error');
+          return;
+        }
+
         const srvPrice = Number(chosenSrv.default_price || 0);
-        const myWorkerId = Number(summary?.worker_id || selectedWorkerId || 1);
-        const combinedWorkerIds = Array.from(new Set([myWorkerId, ...selectedCoWorkers.map(Number)]));
+        const combinedWorkerIds = selectedWorkerIds.map(Number);
 
         setSubmittingJob(true);
         try {
@@ -5321,12 +5590,13 @@
               workerSkipPayment 
                 ? `Wash for ${logPlate.toUpperCase()} logged without payment! Sent to cashier for collection when customer picks up car.` 
                 : `Wash job for ${logPlate.toUpperCase()} logged! Sent to Admin queue for signoff.`, 
-              'success'
+                'success'
             );
             setLogModalOpen(false);
             setLogPlate('');
             setLogRef('');
-            setSelectedCoWorkers([]);
+            const myId = Number(summary?.worker_id || selectedWorkerId || 1);
+            setSelectedWorkerIds([myId]);
             loadWorkerData();
           } else {
             const err = await res.json();
@@ -5341,18 +5611,137 @@
 
       const chosenSrv = servicesList.find(s => s.id === Number(logServiceId));
       const myWorkerId = Number(summary?.worker_id || selectedWorkerId || 1);
-      const otherWorkers = allWorkers.filter(w => Number(w.id) !== myWorkerId);
-      const totalAssignedCount = 1 + selectedCoWorkers.length;
+      const totalAssignedCount = selectedWorkerIds.length;
       const baseComm = Number(chosenSrv?.default_commission_value || 0);
       const splitCommPreview = totalAssignedCount > 0 ? (baseComm / totalAssignedCount).toFixed(0) : baseComm;
 
       return (
         <div className="flex-1 max-w-lg mx-auto w-full p-4 sm:p-6 space-y-4 pb-20">
-          {/* Bay Station Network & Sync Bar */}
+          {/* Bay Station Network & Sync Bar with Mobile Menu Button */}
           <div className="flex items-center justify-between px-1">
-            <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Shell Bay Station</span>
+            <div className="flex items-center space-x-2.5">
+              <button
+                type="button"
+                onClick={() => setWorkerSidebarOpen(true)}
+                className="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-800 flex items-center justify-center text-lg shadow-2xs hover:bg-slate-50 transition"
+                title="Open Navigation Menu"
+              >
+                ☰
+              </button>
+              <div>
+                <span className="text-[11px] font-black text-slate-700 uppercase tracking-wider block leading-none">Shell Bay Station</span>
+                <span className="text-[10px] text-orange-600 font-bold leading-none">{summary?.worker_name || currentUser?.first_name || 'Worker'}</span>
+              </div>
+            </div>
             <NetworkStatusBar showToast={showToast} />
           </div>
+
+          {/* Worker Mobile Sidebar Drawer */}
+          {workerSidebarOpen && (
+            <div className="fixed inset-0 z-50 flex">
+              <div
+                className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+                onClick={() => setWorkerSidebarOpen(false)}
+              />
+              <aside className="relative w-72 max-w-[85vw] bg-white h-full flex flex-col justify-between shadow-2xl z-10 animate-in slide-in-from-left duration-200">
+                <div className="p-4 overflow-y-auto space-y-4">
+                  {/* Header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div className="flex items-center space-x-2.5">
+                      <div className="w-10 h-10 rounded-2xl bg-orange-500 text-white font-black flex items-center justify-center text-lg shadow-md">
+                        SC
+                      </div>
+                      <div>
+                        <h3 className="font-black text-slate-900 text-sm">Shell Bay Worker</h3>
+                        <p className="text-[11px] text-slate-400 font-semibold">{summary?.worker_name || currentUser?.first_name || 'Attendant'}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setWorkerSidebarOpen(false)}
+                      className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center text-sm"
+                      title="Close Menu"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Mini Balance Snippet */}
+                  <div className="bg-gradient-to-tr from-amber-600 to-orange-600 text-white p-4 rounded-2xl shadow-sm">
+                    <span className="text-[10px] uppercase font-bold text-orange-200">Wallet Balance</span>
+                    <p className="text-2xl font-black mt-0.5">KSh {Number(summary?.outstanding_balance || 0).toLocaleString()}</p>
+                    <p className="text-[11px] text-orange-100 mt-1">Today: +KSh {Number(summary?.today_earnings || 0).toLocaleString()}</p>
+                  </div>
+
+                  {/* Worker Menu Items */}
+                  <nav className="space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWorkerSidebarOpen(false);
+                        setLogModalOpen(true);
+                      }}
+                      className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl bg-orange-50 text-orange-700 font-extrabold text-xs hover:bg-orange-100 transition shadow-xs"
+                    >
+                      <span className="text-base">🚗</span>
+                      <span>+ Log Completed Wash</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWorkerTab('dashboard');
+                        setWorkerSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition ${
+                        workerTab === 'dashboard' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <span className="text-base">📋</span>
+                        <span>My Jobs</span>
+                      </div>
+                      <span className="bg-slate-200 text-slate-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                        {jobs.length}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWorkerTab('payouts');
+                        setWorkerSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition ${
+                        workerTab === 'payouts' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <span className="text-base">💵</span>
+                        <span>Payout Receipts</span>
+                      </div>
+                      <span className="bg-slate-200 text-slate-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                        {payouts.length}
+                      </span>
+                    </button>
+                  </nav>
+                </div>
+
+                {/* Footer */}
+                <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+                  <div className="truncate">
+                    <p className="text-xs font-bold text-slate-800 truncate">{summary?.phone_number || 'Bay Staff'}</p>
+                    <span className="text-[10px] font-bold text-orange-600">Active Station</span>
+                  </div>
+                  <button
+                    onClick={onLogout}
+                    className="text-xs font-bold text-red-600 hover:text-red-700 px-2.5 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 transition"
+                  >
+                    Sign Out ⎋
+                  </button>
+                </div>
+              </aside>
+            </div>
+          )}
 
           {/* Header with worker identity & Actions */}
           <div className="flex items-center justify-between bg-white p-4 rounded-3xl border border-slate-200 shadow-xs">
@@ -5488,53 +5877,50 @@
                 </select>
               </div>
 
-              {/* Multi-Employee Assignment: Co-Workers Chips */}
-              <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
+              {/* Multi-Employee Assignment: Select Workers Who Did This Work */}
+              <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <label className="font-extrabold text-slate-800 text-[11px] flex items-center space-x-1">
+                  <label className="font-extrabold text-slate-800 text-[11px] flex items-center space-x-1.5">
                     <span>👥</span>
-                    <span>Washed with Co-Workers? (Tap to Split Commission)</span>
+                    <span>Who Did This Work? (Select Workers) *</span>
                   </label>
                   <span className="text-[10px] font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">
-                    {totalAssignedCount} Staff Assigned
+                    {totalAssignedCount} Staff Selected
                   </span>
                 </div>
 
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  {/* Current Worker (You) */}
-                  <span className="inline-flex items-center px-2.5 py-1.5 rounded-xl text-xs font-black bg-orange-600 text-white shadow-xs">
-                    ✓ {summary?.worker_name || currentUser?.first_name || 'You'} (You)
-                  </span>
-
-                  {/* Other Active Workers */}
-                  {otherWorkers.map(w => {
-                    const isSelected = selectedCoWorkers.includes(w.id);
+                  {allWorkers.map(w => {
+                    const isSelected = selectedWorkerIds.includes(w.id);
+                    const isMe = w.id === myWorkerId;
                     const wName = w.user?.first_name ? `${w.user.first_name} ${w.user.last_name || ''}`.trim() : (w.user?.username || `Worker #${w.id}`);
                     return (
                       <button
                         key={w.id}
                         type="button"
-                        onClick={() => toggleCoWorker(w.id)}
-                        className={`inline-flex items-center space-x-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition border ${
+                        onClick={() => toggleWorkerSelection(w.id)}
+                        className={`inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl text-xs font-bold transition border ${
                           isSelected
-                            ? 'bg-orange-500 border-orange-500 text-white shadow-xs'
+                            ? 'bg-orange-600 border-orange-600 text-white shadow-xs font-black'
                             : 'bg-white border-slate-300 text-slate-700 hover:border-orange-400'
                         }`}
                       >
                         <span>{isSelected ? '✓' : '+'}</span>
-                        <span>{wName}</span>
+                        <span>{wName}{isMe ? ' (You)' : ''}</span>
                       </button>
                     );
                   })}
                 </div>
 
                 {/* Split preview badge */}
-                <div className="text-[11px] font-bold text-slate-600 bg-white p-2 rounded-xl border border-slate-200 flex items-center justify-between">
+                <div className="text-[11px] font-bold text-slate-600 bg-white p-2.5 rounded-xl border border-slate-200 flex items-center justify-between">
                   <span>Commission Split:</span>
                   <span className="text-orange-700 font-extrabold">
-                    {totalAssignedCount === 1 
-                      ? `You earn 100% (KSh ${baseComm})`
-                      : `${totalAssignedCount} workers → Each earns KSh ${splitCommPreview} (Total KSh ${baseComm})`}
+                    {totalAssignedCount === 0
+                      ? '⚠️ Tap at least one worker above'
+                      : totalAssignedCount === 1 
+                        ? `1 Worker earns 100% (KSh ${baseComm})`
+                        : `${totalAssignedCount} workers → Each earns KSh ${splitCommPreview} (Total KSh ${baseComm})`}
                   </span>
                 </div>
               </div>
@@ -5759,41 +6145,36 @@
                     </select>
                   </div>
 
-                  {/* Multi-Employee Assignment: Co-Workers Chips */}
+                  {/* Multi-Employee Assignment: Select Workers Who Did This Work */}
                   <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="font-extrabold text-slate-800 text-[11px] flex items-center space-x-1">
                         <span>👥</span>
-                        <span>Washed with Co-Workers?</span>
+                        <span>Who Did This Work? *</span>
                       </label>
                       <span className="text-[10px] font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">
-                        {totalAssignedCount} Staff Assigned
+                        {totalAssignedCount} Staff Selected
                       </span>
                     </div>
 
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      {/* Current Worker (You) */}
-                      <span className="inline-flex items-center px-2 py-1 rounded-xl text-[11px] font-black bg-orange-600 text-white shadow-xs">
-                        ✓ {summary?.worker_name || currentUser?.first_name || 'You'} (You)
-                      </span>
-
-                      {/* Other Active Workers */}
-                      {otherWorkers.map(w => {
-                        const isSelected = selectedCoWorkers.includes(w.id);
+                      {allWorkers.map(w => {
+                        const isSelected = selectedWorkerIds.includes(w.id);
+                        const isMe = w.id === myWorkerId;
                         const wName = w.user?.first_name ? `${w.user.first_name} ${w.user.last_name || ''}`.trim() : (w.user?.username || `Worker #${w.id}`);
                         return (
                           <button
                             key={w.id}
                             type="button"
-                            onClick={() => toggleCoWorker(w.id)}
-                            className={`inline-flex items-center space-x-1 px-2 py-1 rounded-xl text-[11px] font-bold transition border ${
+                            onClick={() => toggleWorkerSelection(w.id)}
+                            className={`inline-flex items-center space-x-1 px-2.5 py-1 rounded-xl text-[11px] font-bold transition border ${
                               isSelected
-                                ? 'bg-orange-500 border-orange-500 text-white shadow-xs'
+                                ? 'bg-orange-600 border-orange-600 text-white shadow-xs font-black'
                                 : 'bg-white border-slate-300 text-slate-700 hover:border-orange-400'
                             }`}
                           >
                             <span>{isSelected ? '✓' : '+'}</span>
-                            <span>{wName}</span>
+                            <span>{wName}{isMe ? ' (You)' : ''}</span>
                           </button>
                         );
                       })}
