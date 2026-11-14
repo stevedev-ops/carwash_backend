@@ -1032,6 +1032,46 @@
         return () => clearInterval(interval);
       }, []);
 
+      // Edge Swipe: Swiping right from anywhere on left edge opens sidebar drawer from anywhere
+      useEffect(() => {
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        const handleTouchStart = (e) => {
+          if (e.touches && e.touches.length === 1) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+          }
+        };
+
+        const handleTouchEnd = (e) => {
+          if (!touchStartX) return;
+          const touchEndX = e.changedTouches[0].clientX;
+          const touchEndY = e.changedTouches[0].clientY;
+          const diffX = touchEndX - touchStartX;
+          const diffY = touchEndY - touchStartY;
+
+          // If swiped right from anywhere near the left side of the screen (< 80px)
+          if (diffX > 50 && Math.abs(diffX) > Math.abs(diffY) && touchStartX < 80) {
+            setMobileMenuOpen(true);
+          }
+          // If drawer is open and swiped left, close it
+          if (diffX < -50 && Math.abs(diffX) > Math.abs(diffY) && mobileMenuOpen) {
+            setMobileMenuOpen(false);
+          }
+          touchStartX = 0;
+          touchStartY = 0;
+        };
+
+        window.addEventListener('touchstart', handleTouchStart, { passive: true });
+        window.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+        return () => {
+          window.removeEventListener('touchstart', handleTouchStart);
+          window.removeEventListener('touchend', handleTouchEnd);
+        };
+      }, [mobileMenuOpen]);
+
       const navItems = [
         { id: 'dashboard', label: 'Dashboard', icon: '📊' },
         { id: 'record', label: 'Record Car Wash', icon: '🚗', badge: 'Action' },
@@ -1200,7 +1240,7 @@
           )}
 
           {/* Main Workspace */}
-          <main className="flex-1 flex flex-col overflow-y-auto min-w-0 bg-slate-50">
+          <main className="flex-1 flex flex-col overflow-y-auto min-w-0 bg-slate-50 pb-24 md:pb-0">
             {/* Top Workspace Bar with Network/Sync Status */}
             <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-3 flex items-center justify-between shrink-0 shadow-2xs sticky top-0 z-30">
               <div className="flex items-center space-x-3">
@@ -1266,6 +1306,82 @@
               {activeTab === 'reports' && <ReportsModule showToast={showToast} />}
             </div>
           </main>
+
+          {/* Mobile Bottom Navigation Bar (Fixed at bottom on phones - always accessible anywhere on page) */}
+          <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-40 flex items-center justify-around py-2 px-1 shadow-[0_-4px_16px_rgba(0,0,0,0.08)]">
+            <button
+              type="button"
+              onClick={() => setActiveTab('dashboard')}
+              className={`flex flex-col items-center justify-center flex-1 py-1 transition ${
+                activeTab === 'dashboard' ? 'text-blue-700 font-extrabold' : 'text-slate-500 font-medium'
+              }`}
+            >
+              <span className="text-lg">📊</span>
+              <span className="text-[10px] tracking-tight">Overview</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('record')}
+              className={`flex flex-col items-center justify-center flex-1 py-1 transition ${
+                activeTab === 'record' ? 'text-blue-700 font-extrabold' : 'text-slate-500 font-medium'
+              }`}
+            >
+              <span className="text-lg">🚗</span>
+              <span className="text-[10px] tracking-tight">Wash</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('approvals')}
+              className={`relative flex flex-col items-center justify-center flex-1 py-1 transition ${
+                activeTab === 'approvals' ? 'text-blue-700 font-extrabold' : 'text-slate-500 font-medium'
+              }`}
+            >
+              <span className="text-lg">⏳</span>
+              <span className="text-[10px] tracking-tight">Queue</span>
+              {pendingCount > 0 && (
+                <span className="absolute top-0 right-3 bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.2 rounded-full animate-pulse">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('workers')}
+              className={`flex flex-col items-center justify-center flex-1 py-1 transition ${
+                activeTab === 'workers' ? 'text-blue-700 font-extrabold' : 'text-slate-500 font-medium'
+              }`}
+            >
+              <span className="text-lg">👥</span>
+              <span className="text-[10px] tracking-tight">Staff</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="flex flex-col items-center justify-center flex-1 py-1 text-slate-800 font-extrabold transition hover:text-blue-700"
+              title="Open Navigation Sidebar"
+            >
+              <span className="text-lg bg-blue-50 text-blue-700 w-7 h-7 rounded-lg flex items-center justify-center shadow-2xs">☰</span>
+              <span className="text-[10px] tracking-tight text-blue-700 font-black">Menu</span>
+            </button>
+          </nav>
+
+          {/* Quick Floating Sidebar Pill Button for Mobile (Floating on bottom-right - accessible anywhere on page) */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            className="fixed bottom-20 right-4 z-40 md:hidden flex items-center space-x-1.5 bg-gradient-to-r from-blue-700 to-indigo-700 text-white px-3.5 py-2.5 rounded-full shadow-2xl active:scale-95 transition-all hover:brightness-110 border border-white/20 backdrop-blur-md text-xs font-black"
+            title="Open Full Sidebar Menu"
+          >
+            <span className="text-base">☰</span>
+            <span>Menu</span>
+            {pendingCount > 0 && (
+              <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse ring-1 ring-white" />
+            )}
+          </button>
         </div>
       );
     }
@@ -6641,6 +6757,46 @@
 
       useEffect(() => { loadWorkerData(); }, [selectedWorkerId]);
 
+      // Edge Swipe: Swiping right from left edge anywhere on screen opens worker sidebar drawer from anywhere
+      useEffect(() => {
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        const handleTouchStart = (e) => {
+          if (e.touches && e.touches.length === 1) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+          }
+        };
+
+        const handleTouchEnd = (e) => {
+          if (!touchStartX) return;
+          const touchEndX = e.changedTouches[0].clientX;
+          const touchEndY = e.changedTouches[0].clientY;
+          const diffX = touchEndX - touchStartX;
+          const diffY = touchEndY - touchStartY;
+
+          // If swiped right from anywhere near the left side of the screen (< 80px)
+          if (diffX > 50 && Math.abs(diffX) > Math.abs(diffY) && touchStartX < 80) {
+            setWorkerSidebarOpen(true);
+          }
+          // If drawer is open and swiped left, close it
+          if (diffX < -50 && Math.abs(diffX) > Math.abs(diffY) && workerSidebarOpen) {
+            setWorkerSidebarOpen(false);
+          }
+          touchStartX = 0;
+          touchStartY = 0;
+        };
+
+        window.addEventListener('touchstart', handleTouchStart, { passive: true });
+        window.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+        return () => {
+          window.removeEventListener('touchstart', handleTouchStart);
+          window.removeEventListener('touchend', handleTouchEnd);
+        };
+      }, [workerSidebarOpen]);
+
       const handleWorkerSubmitJob = async (e) => {
         e.preventDefault();
         if (!logPlate.trim()) {
@@ -6715,20 +6871,20 @@
       const splitCommPreview = totalAssignedCount > 0 ? (baseComm / totalAssignedCount).toFixed(0) : baseComm;
 
       return (
-        <div className="flex-1 max-w-lg mx-auto w-full p-4 sm:p-6 space-y-4 pb-20">
-          {/* Bay Station Network & Sync Bar with Mobile Menu Button */}
-          <div className="flex items-center justify-between px-1">
+        <div className="flex-1 max-w-lg mx-auto w-full p-4 sm:p-6 space-y-4 pb-24">
+          {/* Bay Station Sticky Top Bar (Always visible at top on phones) */}
+          <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md p-3 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2.5">
               <button
                 type="button"
                 onClick={() => setWorkerSidebarOpen(true)}
-                className="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-800 flex items-center justify-center text-lg shadow-2xs hover:bg-slate-50 transition"
+                className="w-9 h-9 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-700 flex items-center justify-center text-lg font-bold shadow-2xs transition"
                 title="Open Navigation Menu"
               >
                 ☰
               </button>
               <div>
-                <span className="text-[11px] font-black text-slate-700 uppercase tracking-wider block leading-none">Shell Bay Station</span>
+                <span className="text-[11px] font-black text-slate-800 uppercase tracking-wider block leading-none">Shell Bay Station</span>
                 <span className="text-[10px] text-orange-600 font-bold leading-none">{summary?.worker_name || currentUser?.first_name || 'Worker'}</span>
               </div>
             </div>
@@ -7368,6 +7524,17 @@
               </div>
             </div>
           )}
+
+          {/* Quick Floating Menu Button for Worker (Always accessible anywhere on worker screen) */}
+          <button
+            type="button"
+            onClick={() => setWorkerSidebarOpen(true)}
+            className="fixed bottom-6 right-5 z-40 flex items-center space-x-2 bg-gradient-to-r from-orange-600 to-amber-600 text-white px-4 py-3 rounded-full shadow-2xl active:scale-95 transition-all hover:brightness-110 border border-white/20 backdrop-blur-md text-xs font-black"
+            title="Open Sidebar Menu"
+          >
+            <span className="text-base">☰</span>
+            <span className="tracking-wide uppercase">Menu</span>
+          </button>
         </div>
       );
     }
